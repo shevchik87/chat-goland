@@ -40,7 +40,7 @@ type Message struct {
 }
 
 
-func (p *dialog) getProduct(db *sql.DB) error {
+func (p *Dialog) getDialog(db *sql.DB) error {
 	return errors.New("Not implemented")
 }
 
