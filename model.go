@@ -16,6 +16,7 @@ type User struct {
 	UserName 			string 	`json:"user_name"`
 	Password 			string  `json:"password"`
 	Token 				string	`json:"token"`
+	Sex					string	`json:"sex"`
 
 }
 
@@ -40,16 +41,60 @@ type Message struct {
 }
 
 
-func (d *Dialog) getDialog(db *sql.DB) error {
+func (d *Dialog) read(db *sql.DB) error {
 	return errors.New("Not implemented")
 }
 
+func (d *Dialog) create(db *sql.DB) error {
+	return errors.New("Not implemented")
+}
+
+func getDialogs(db *sql.DB) ([]DialogUser, error) {
+	rows, err := db.Query("SELECT * FROM dialog_users")
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	dialogs := []DialogUser{}
+
+	for rows.Next() {
+		var d DialogUser
+		if err := rows.Scan(&d.DialogId, &d.UserId, &d.CountNewMessages); err != nil {
+			return nil, err
+		}
+		dialogs = append(dialogs, d)
+	}
+
+	return dialogs, nil
+
+}
+
+/**
+ User methods
+ */
 func (u *User) login(db *sql.DB) error {
 	return errors.New("No implements")
 }
 
-
-
-func getdialogs(db *sql.DB, start, count int) ([]dialog, error) {
-	return nil, errors.New("Not implemented")
+func (u *User) registration(db *sql.DB) error {
+	return errors.New("No implements")
 }
+
+func (u *User) exist(db *sql.DB) error {
+	return errors.New("No implements")
+}
+
+
+/**
+ Message methods
+ */
+func (m * Message) send(db *sql.DB) error  {
+	return errors.New("No implement")
+}
+
+func (m * Message) remove(db *sql.DB) error  {
+	return errors.New("No implement")
+}
+
