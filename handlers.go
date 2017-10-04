@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 	"encoding/json"
+	"github.com/gorilla/mux"
+	"strconv"
 )
 
 
@@ -16,8 +18,20 @@ func (a *App) UserExist(w http.ResponseWriter, r *http.Request)  {
 
 }
 
+func (a *App) SendToDialog(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func (a *App) GetDialogs(w http.ResponseWriter, r *http.Request)  {
-	dialogs, err := getDialogs(a.DB)
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Product ID")
+		return
+	}
+
+	dialogs, err := getDialogs(a.DB, id)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return

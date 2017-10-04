@@ -34,5 +34,5 @@ func (a *App) Run(addr string) {
 }
 
 func (a *App)initializeRoutes()  {
-	a.Router.HandleFunc("/dialogs", a.GetDialogs).Methods("GET")
+	a.Router.HandleFunc("/dialogs/{id:[0-9]+}", a.GetDialogs).Methods("GET")
 }
