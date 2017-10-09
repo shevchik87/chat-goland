@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 )
 
 func main() {
@@ -9,6 +8,4 @@ func main() {
 	a.Initialize("postgres", "postgres", "chat")
 
 	a.Run(":8080")
-
-	fmt.Print(a)
 }

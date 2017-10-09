@@ -54,7 +54,8 @@ type RoomMessage struct {
 type RoomUser struct {
 	RoomId 				int 	`json:"room_id"`
 	UserId 				int 	`json:"user_id"`
-
+	Created 			int 	`json:"created"`
+	DateLastUserMessage int 	`json:"date_last_user_message"`
 }
 
 
@@ -130,13 +131,19 @@ func (m * DialogMessage) send(db *sql.DB)  error  {
 }
 
 func (m * DialogMessage) save(db *sql.DB, dialogId int) error  {
-	db.Exec()
+	_, err := db.Exec("INSERT INTO dialog_messages(owner_id, contact_id, dialog_id, text)" +
+		"VALUES($1,$2,$3,$4,$5)", m.OwnerId, m.ContactId, dialogId, m.Text)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (m * Message) remove(db *sql.DB) error  {
+func (m * DialogMessage) remove(db *sql.DB) error  {
 	return errors.New("No implement")
 }
-func (m *Message) getMessages(db *sql.DB, dialog_id int) ([]Message, error)  {
-
+func (m *DialogMessage) getMessages(db *sql.DB, dialog_id int) (error)  {
+	return errors.New("No implement")
 }
 

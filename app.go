@@ -4,10 +4,12 @@ import (
 	"database/sql"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	_ "github.com/lib/pq"
 	"fmt"
 	"log"
 	"net/http"
+	"github.com/codegangsta/negroni"
 )
 
 type App struct {
@@ -30,9 +32,20 @@ func (a *App) Initialize(user, password, dbname string) {
 }
 
 func (a *App) Run(addr string) {
-	log.Fatal(http.ListenAndServe(":9000", a.Router))
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:8080"},
+		AllowCredentials: true,
+	})
+	handler := c.Handler(a.Router)
+	log.Fatal(http.ListenAndServe(":9000", handler))
 }
 
 func (a *App)initializeRoutes()  {
-	a.Router.HandleFunc("/dialogs/{id:[0-9]+}", a.GetDialogs).Methods("GET")
+	a.Router.StrictSlash(true)
+	a.Router.HandleFunc("/login", a.Login).Methods("POST")
+
+	// Protected Endpoints
+	a.Router.Handle("/dialogs/{id:[0-9]+}", negroni.New(negroni.HandlerFunc(ValidateTokenMiddleware),
+		negroni.Wrap(http.HandlerFunc(a.GetDialogs)),
+	))
 }
