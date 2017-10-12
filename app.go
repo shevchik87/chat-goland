@@ -10,11 +10,13 @@ import (
 	"log"
 	"net/http"
 	"github.com/codegangsta/negroni"
+	"github.com/go-redis/redis"
 )
 
 type App struct {
 	Router *mux.Router
 	DB     *sql.DB
+	Redis  *redis.Client
 }
 
 func (a *App) Initialize(user, password, dbname string) {
@@ -28,6 +30,11 @@ func (a *App) Initialize(user, password, dbname string) {
 	}
 
 	a.Router = mux.NewRouter()
+	a.Redis = redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 	a.initializeRoutes()
 }
 
@@ -43,9 +50,10 @@ func (a *App) Run(addr string) {
 func (a *App)initializeRoutes()  {
 	a.Router.StrictSlash(true)
 	a.Router.HandleFunc("/login", a.Login).Methods("POST")
+	a.Router.HandleFunc("/register", a.Registration).Methods("POST")
 
 	// Protected Endpoints
-	a.Router.Handle("/dialogs/{id:[0-9]+}", negroni.New(negroni.HandlerFunc(ValidateTokenMiddleware),
+	a.Router.Handle("/dialogs/{id:[0-9]+}", negroni.New(negroni.HandlerFunc(a.ValidateTokenMiddleware),
 		negroni.Wrap(http.HandlerFunc(a.GetDialogs)),
 	))
 }

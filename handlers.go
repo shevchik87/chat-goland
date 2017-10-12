@@ -7,14 +7,7 @@ import (
 	"strconv"
 	"fmt"
 	"strings"
-	"time"
 )
-
-type UserCredentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-var mySigningKey []byte
 
 func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 
@@ -28,40 +21,59 @@ func (a *App) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.ToLower(user.Username) != "someone" {
-		if user.Password != "p@ssword" {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println("Error logging in")
-			fmt.Fprint(w, "Invalid credentials")
-			return
-		}
+	userFull := User{
+		UserName : user.Username,
+		Password : user.Password,
+	}
+	userFull.login(a.DB)
+
+	if userFull.Id == 0{
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
 
-    mySigningKey = []byte(fmt.Sprint(time.Now().UnixNano()))
+	userFull.Token, err = GenerateRandomString(32)
 
-	respondWithJSON(w,http.StatusOK, mySigningKey)
+	stringUser, err := json.Marshal(userFull)
+
+	err = a.Redis.Set(userFull.Token, stringUser,0).Err()
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	respondWithJSON(w, http.StatusOK, userFull)
 }
 
-func ValidateTokenMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func (a *App) ValidateTokenMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 
 	reqToken := r.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer")
-	reqToken = splitToken[1]
-	fmt.Fprint(w, reqToken)
-	next(w, r)
+	splitToken := strings.Split(reqToken, "Bearer ")
+
+	if len(splitToken) < 2 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	_, err := a.Redis.Get(splitToken[1]).Result()
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	next(w,r)
 
 }
+
+//register user
 func (a *App) Registration(w http.ResponseWriter, r *http.Request)  {
 
 }
-func (a *App) UserExist(w http.ResponseWriter, r *http.Request)  {
 
-}
-
+//
 func (a *App) SendToDialog(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//get dialogs by user_id
 func (a *App) GetDialogs(w http.ResponseWriter, r *http.Request)  {
 
 	vars := mux.Vars(r)
@@ -79,6 +91,8 @@ func (a *App) GetDialogs(w http.ResponseWriter, r *http.Request)  {
 
 	respondWithJSON(w, http.StatusOK, dialogs)
 }
+
+
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }

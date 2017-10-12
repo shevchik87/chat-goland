@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"crypto/rand"
+	"encoding/base64"
 )
 
 type Dialog struct {
@@ -27,7 +29,7 @@ type Room struct {
 type User struct {
 	Id 					int 	`json:"id"`
 	UserName 			string 	`json:"user_name"`
-	Password 			string  `json:"password"`
+	Password 			string  `json:"-"`
 	Token 				string	`json:"token"`
 	Sex					string	`json:"sex"`
 	DateBirth 			int 	`json:"date_birth"`
@@ -56,6 +58,11 @@ type RoomUser struct {
 	UserId 				int 	`json:"user_id"`
 	Created 			int 	`json:"created"`
 	DateLastUserMessage int 	`json:"date_last_user_message"`
+}
+
+type UserCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 
@@ -94,18 +101,14 @@ func getDialogs(db *sql.DB, id int) ([]Dialog, error) {
 /**
  User methods
  */
-func (u *User) login(db *sql.DB) error {
-	return errors.New("No implements")
+func (u *User) login(db *sql.DB){
+	 db.QueryRow("SELECT id, sex, token FROM users WHERE user_name=$1 AND password=$2",
+		u.UserName,u.Password).Scan(&u.Id, &u.Sex, &u.Token)
 }
 
 func (u *User) registration(db *sql.DB) error {
 	return errors.New("No implements")
 }
-
-func (u *User) exist(db *sql.DB) error {
-	return errors.New("No implements")
-}
-
 
 /**
  Message methods
@@ -147,3 +150,28 @@ func (m *DialogMessage) getMessages(db *sql.DB, dialog_id int) (error)  {
 	return errors.New("No implement")
 }
 
+
+// GenerateRandomBytes returns securely generated random bytes.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func GenerateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+// GenerateRandomString returns a URL-safe, base64 encoded
+// securely generated random string.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func GenerateRandomString(s int) (string, error) {
+	b, err := GenerateRandomBytes(s)
+	return base64.URLEncoding.EncodeToString(b), err
+}
