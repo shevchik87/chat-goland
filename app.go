@@ -11,12 +11,14 @@ import (
 	"github.com/rs/cors"
 	"log"
 	"net/http"
+	"github.com/shevchik87/chat-goland/socket"
 )
 
 type App struct {
 	Router *mux.Router
 	DB     *sql.DB
 	Redis  *redis.Client
+	Hub    *socket.Hub
 }
 
 func (a *App) Initialize(user, password, dbname string) {
@@ -35,15 +37,18 @@ func (a *App) Initialize(user, password, dbname string) {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+	a.Hub = socket.NewHub()
 	a.initializeRoutes()
 }
 
 func (a *App) Run(addr string) {
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8080"},
+		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
 	})
+	go a.Hub.Run()
 	handler := c.Handler(a.Router)
+
 	log.Fatal(http.ListenAndServe(":9000", handler))
 }
 
@@ -51,6 +56,10 @@ func (a *App) initializeRoutes() {
 	a.Router.StrictSlash(true)
 	a.Router.HandleFunc("/login", a.LoginHandler).Methods("POST")
 	a.Router.HandleFunc("/register", a.RegistrationHandler).Methods("POST")
+
+	a.Router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		socket.ServeWs(a.Hub, w, r)
+	})
 
 	// Protected Endpoints
 	a.Router.Handle("/dialogs/{id:[0-9]+}", negroni.New(negroni.HandlerFunc(a.ValidateTokenMiddleware),
